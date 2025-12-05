@@ -1,20 +1,44 @@
 "use client";
 
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
-import { projects } from '@/data/projects';
 import { useIsMobile } from '@/hooks/use-mobile';
+import type { Project } from '@/data/projects';
 
 export default function CaseStudiesSection() {
   const { language, t } = useLanguage();
   const isMobile = useIsMobile();
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const response = await fetch('/api/projects');
+        if (response.ok) {
+          const data = await response.json();
+          setProjects(data);
+        }
+      } catch (error) {
+        console.error('Error fetching projects:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProjects();
+  }, []);
 
   // Show only first 1 project on mobile, first 2 on desktop
   const caseStudies = isMobile ? projects.slice(0, 1) : projects.slice(0, 2);
+
+  if (loading || caseStudies.length === 0) {
+    return null;
+  }
 
   return (
     <section className="py-16 sm:py-24 md:py-32 px-4 sm:px-6">
@@ -48,7 +72,7 @@ export default function CaseStudiesSection() {
               viewport={{ once: true, margin: '-50px' }}
               transition={{ delay: index * 0.03, duration: 0.3, ease: 'easeOut' }}
             >
-              <Card className="group h-full bg-card/50 border-border/50 hover-glow transition-all duration-500 hover:border-primary/30 overflow-hidden">
+              <Card className="group h-full bg-card/50 border-border/50 hover-glow transition-all duration-500 hover:border-primary/50 overflow-hidden">
                 {/* Image Placeholder */}
                 <div className={`aspect-video bg-gradient-to-br ${study.gradient} relative overflow-hidden`}>
                   <div className="absolute inset-0 bg-card/50 flex items-center justify-center">

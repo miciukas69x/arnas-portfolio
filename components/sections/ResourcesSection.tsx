@@ -1,13 +1,14 @@
 "use client";
 
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Download, FileText, Image, Archive, File, ArrowRight } from 'lucide-react';
-import { resources } from '@/data/resources';
 import { useIsMobile } from '@/hooks/use-mobile';
+import type { DownloadableResource } from '@/data/resources';
 
 const getFileIcon = (fileType: string) => {
   const type = fileType.toLowerCase();
@@ -20,11 +21,30 @@ const getFileIcon = (fileType: string) => {
 export default function ResourcesSection() {
   const { language, t } = useLanguage();
   const isMobile = useIsMobile();
+  const [resources, setResources] = useState<DownloadableResource[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchResources = async () => {
+      try {
+        const response = await fetch('/api/resources');
+        if (response.ok) {
+          const data = await response.json();
+          setResources(data);
+        }
+      } catch (error) {
+        console.error('Error fetching resources:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchResources();
+  }, []);
 
   // Show only first 2 resources on mobile, first 3 on desktop
   const displayedResources = isMobile ? resources.slice(0, 2) : resources.slice(0, 3);
 
-  if (resources.length === 0) {
+  if (loading || displayedResources.length === 0) {
     return null;
   }
 
@@ -66,7 +86,7 @@ export default function ResourcesSection() {
                 viewport={{ once: true, margin: '-50px' }}
                 transition={{ delay: index * 0.1, duration: 0.3, ease: 'easeOut' }}
               >
-                <Card className="h-full flex flex-col hover:shadow-lg transition-all bg-card/50 border-border/50 hover:border-primary/30 group">
+                <Card className="h-full flex flex-col hover:shadow-lg transition-all bg-card/50 border-border/50 hover:border-primary/50 group">
                   {resource.thumbnail && (
                     <div className="relative w-full h-32 sm:h-40 overflow-hidden rounded-t-lg">
                       <img
@@ -78,7 +98,7 @@ export default function ResourcesSection() {
                   )}
                   <CardHeader className="pb-3">
                     <div className="flex items-start gap-3">
-                      <div className="p-2 rounded-lg bg-primary/10 flex-shrink-0">
+                      <div className="p-2 rounded-lg bg-primary/20 flex-shrink-0">
                         <FileIcon className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -112,15 +132,26 @@ export default function ResourcesSection() {
                       </div>
                     )}
                     <Button
-                      asChild
                       variant="outline"
                       size="sm"
                       className="w-full mt-auto group/btn"
+                      onClick={() => {
+                        const isExternalUrl = resource.fileUrl.startsWith('http://') || resource.fileUrl.startsWith('https://');
+                        if (isExternalUrl) {
+                          // Use download API route for external URLs (Supabase Storage)
+                          const downloadUrl = `/api/download?url=${encodeURIComponent(resource.fileUrl)}&filename=${encodeURIComponent(resource.fileName)}`;
+                          window.location.href = downloadUrl;
+                        } else {
+                          // Local file - direct download
+                          const link = document.createElement('a');
+                          link.href = resource.fileUrl;
+                          link.download = resource.fileName;
+                          link.click();
+                        }
+                      }}
                     >
-                      <Link href={resource.fileUrl} download={resource.fileName}>
-                        <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
-                        {t('resources.download')}
-                      </Link>
+                      <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+                      {t('resources.download')}
                     </Button>
                   </CardContent>
                 </Card>

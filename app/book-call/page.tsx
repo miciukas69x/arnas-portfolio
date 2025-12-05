@@ -7,7 +7,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
-import { Facebook, Instagram, Linkedin, Twitter, ArrowLeft, Clock, Video, Calendar, Check } from 'lucide-react';
+import { Facebook, Instagram, Linkedin, ArrowLeft, Clock, Video, Calendar, Check } from 'lucide-react';
 import CalendlyWidget from '@/components/CalendlyWidget';
 
 export default function BookCallPage() {
@@ -156,7 +156,6 @@ export default function BookCallPage() {
                 { icon: Facebook, href: '#' },
                 { icon: Instagram, href: '#' },
                 { icon: Linkedin, href: '#' },
-                { icon: Twitter, href: '#' },
               ].map((social, i) => (
                 <a
                   key={i}
@@ -177,7 +176,7 @@ export default function BookCallPage() {
             >
               <div className="glass rounded-2xl p-4 sm:p-6 md:p-8 max-w-4xl mx-auto overflow-hidden">
                 <CalendlyWidget
-                  url="https://calendly.com/michailinasmatas/30min?background_color=000000&text_color=ffffff&primary_color=ffe100"
+                  url="https://calendly.com/michailinasmatas/30min?background_color=000000&text_color=ffffff&primary_color=4a6fa5"
                   className="w-full"
                 />
               </div>

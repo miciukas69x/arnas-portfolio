@@ -65,7 +65,7 @@ export default function StoryPage() {
                     sizes="(max-width: 640px) 200px, (max-width: 768px) 280px, 50vw"
                   />
                 </div>
-                <div className="absolute -bottom-2 sm:-bottom-4 -right-2 sm:-right-4 w-12 h-12 sm:w-16 sm:h-16 md:w-24 md:h-24 lg:w-32 lg:h-32 border border-primary/30 rounded-xl sm:rounded-2xl -z-10" />
+                <div className="absolute -bottom-2 sm:-bottom-4 -right-2 sm:-right-4 w-12 h-12 sm:w-16 sm:h-16 md:w-24 md:h-24 lg:w-32 lg:h-32 border border-primary/50 rounded-xl sm:rounded-2xl -z-10" />
               </motion.div>
 
               {/* Content */}

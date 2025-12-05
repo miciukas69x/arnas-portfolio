@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
-import { Facebook, Instagram, Linkedin, Twitter } from 'lucide-react';
+import { Facebook, Instagram, Linkedin } from 'lucide-react';
 import CalendlyWidget from '@/components/CalendlyWidget';
 
 export default function BookCallSection() {
@@ -81,7 +81,6 @@ export default function BookCallSection() {
             { icon: Facebook, href: '#' },
             { icon: Instagram, href: '#' },
             { icon: Linkedin, href: '#' },
-            { icon: Twitter, href: '#' },
           ].map((social, i) => (
             <a
               key={i}
@@ -103,7 +102,7 @@ export default function BookCallSection() {
         >
           <div className="glass rounded-2xl p-4 sm:p-6 md:p-8 max-w-4xl mx-auto overflow-hidden">
             <CalendlyWidget
-              url="https://calendly.com/michailinasmatas/30min?background_color=000000&text_color=ffffff&primary_color=ffe100"
+              url="https://calendly.com/michailinasmatas/30min?background_color=000000&text_color=ffffff&primary_color=4a6fa5"
               className="w-full"
             />
           </div>

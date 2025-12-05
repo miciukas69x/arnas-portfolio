@@ -171,10 +171,10 @@ export default function ServicePageTemplate({ service }: ServicePageTemplateProp
                   viewport={{ once: true }}
                   transition={{ delay: index * 0.1, duration: 0.3 }}
                 >
-                  <Card className="bg-card/50 border-border/50 hover:border-primary/30 transition-all">
+                  <Card className="bg-card/50 border-border/50 hover:border-primary/50 transition-all">
                     <CardContent className="p-6">
                       <div className="flex gap-4">
-                        <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg">
+                        <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-lg">
                           {index + 1}
                         </div>
                         <div className="flex-1">
@@ -235,7 +235,7 @@ export default function ServicePageTemplate({ service }: ServicePageTemplateProp
                 viewport={{ once: true }}
                 transition={{ duration: 0.3 }}
               >
-                <Card className="bg-card/50 border-border/50 border-primary/20">
+                <Card className="bg-card/50 border-border/50 border-primary/40">
                   <CardContent className="p-8">
                     <div className="flex items-start gap-4">
                       <DollarSign className="text-primary flex-shrink-0" size={32} />

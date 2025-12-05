@@ -28,7 +28,7 @@ export default function StorySection() {
               />
             </div>
             {/* Decorative element */}
-            <div className="absolute -bottom-2 sm:-bottom-4 -right-2 sm:-right-4 w-12 h-12 sm:w-16 sm:h-16 md:w-24 md:h-24 lg:w-32 lg:h-32 border border-primary/30 rounded-xl sm:rounded-2xl -z-10" />
+            <div className="absolute -bottom-2 sm:-bottom-4 -right-2 sm:-right-4 w-12 h-12 sm:w-16 sm:h-16 md:w-24 md:h-24 lg:w-32 lg:h-32 border border-primary/50 rounded-xl sm:rounded-2xl -z-10" />
             {/* CTA */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}

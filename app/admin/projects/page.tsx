@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { projects, type Project } from '@/data/projects';
+import { type Project } from '@/data/projects';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,11 +14,12 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import AnimatedBackground from '@/components/AnimatedBackground';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { ArrowLeft, Plus, X, Edit, ExternalLink, Save, Trash2 } from 'lucide-react';
+import { ArrowLeft, Plus, X, Edit, ExternalLink, Save, Trash2, Loader2 } from 'lucide-react';
 
 function AdminProjectsPage() {
   const { language } = useLanguage();
-  const [localProjects, setLocalProjects] = useState(projects);
+  const [localProjects, setLocalProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<Project>>({
@@ -42,7 +43,26 @@ function AdminProjectsPage() {
   const [techInput, setTechInput] = useState({ lt: '', en: '' });
   const [statInput, setStatInput] = useState({ label: '', value: '', description: { lt: '', en: '' } });
 
-  const handleAddProject = () => {
+  // Fetch projects from API
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/projects');
+        if (!response.ok) throw new Error('Failed to fetch projects');
+        const data = await response.json();
+        setLocalProjects(data);
+      } catch (error) {
+        console.error('Error fetching projects:', error);
+        alert(language === 'lt' ? 'Klaida įkeliant projektus' : 'Error loading projects');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProjects();
+  }, [language]);
+
+  const handleAddProject = async () => {
     if (!formData.id || !formData.title) {
       alert(language === 'lt' ? 'Užpildykite visus privalomus laukus' : 'Please fill all required fields');
       return;
@@ -65,15 +85,34 @@ function AdminProjectsPage() {
       gradient: formData.gradient || 'from-blue-500 to-purple-600',
     };
 
-    if (editingId) {
-      setLocalProjects(localProjects.map(p => p.id === editingId ? newProject : p));
-      setEditingId(null);
-    } else {
-      setLocalProjects([...localProjects, newProject]);
-    }
+    try {
+      const url = editingId ? `/api/projects/${editingId}` : '/api/projects';
+      const method = editingId ? 'PUT' : 'POST';
+      
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newProject),
+      });
 
-    resetForm();
-    alert(language === 'lt' ? 'Projektas išsaugotas!' : 'Project saved!');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to save project');
+      }
+
+      // Refresh projects from API
+      const fetchResponse = await fetch('/api/projects');
+      if (fetchResponse.ok) {
+        const data = await fetchResponse.json();
+        setLocalProjects(data);
+      }
+
+      resetForm();
+      alert(language === 'lt' ? 'Projektas išsaugotas!' : 'Project saved!');
+    } catch (error) {
+      console.error('Error saving project:', error);
+      alert(language === 'lt' ? 'Klaida išsaugant projektą' : 'Error saving project');
+    }
   };
 
   const handleEditProject = (project: Project) => {
@@ -82,9 +121,35 @@ function AdminProjectsPage() {
     setIsAdding(true);
   };
 
-  const handleRemoveProject = (id: string) => {
-    if (confirm(language === 'lt' ? 'Ar tikrai norite pašalinti šį projektą?' : 'Are you sure you want to remove this project?')) {
-      setLocalProjects(localProjects.filter((p) => p.id !== id));
+  const handleRemoveProject = async (id: string) => {
+    if (!confirm(language === 'lt' ? 'Ar tikrai norite pašalinti šį projektą?' : 'Are you sure you want to remove this project?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/projects/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || `Failed to delete project: ${response.status}`);
+      }
+
+      // Refresh projects from API
+      const fetchResponse = await fetch('/api/projects');
+      if (fetchResponse.ok) {
+        const data = await fetchResponse.json();
+        setLocalProjects(data);
+        alert(language === 'lt' ? 'Projektas pašalintas!' : 'Project removed!');
+      } else {
+        throw new Error('Failed to refresh projects list');
+      }
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      alert(language === 'lt' 
+        ? `Klaida šalinant projektą: ${error instanceof Error ? error.message : 'Nežinoma klaida'}` 
+        : `Error deleting project: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -691,7 +756,16 @@ function AdminProjectsPage() {
 
           {/* Projects List */}
           <div className="space-y-4">
-            {localProjects.length === 0 ? (
+            {loading ? (
+              <Card className="bg-card/50 border-border/50">
+                <CardContent className="py-12 text-center">
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+                  <p className="text-muted-foreground">
+                    {language === 'lt' ? 'Įkeliama...' : 'Loading...'}
+                  </p>
+                </CardContent>
+              </Card>
+            ) : localProjects.length === 0 ? (
               <Card className="bg-card/50 border-border/50">
                 <CardContent className="py-12 text-center text-muted-foreground">
                   {language === 'lt' ? 'Projektų nėra' : 'No projects'}
@@ -713,7 +787,7 @@ function AdminProjectsPage() {
                             <CardTitle className="text-lg sm:text-xl">
                               {project.title}
                             </CardTitle>
-                            <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">
+                            <span className="text-xs px-2 py-1 rounded-full bg-primary/20 text-primary">
                               {project.category[language]}
                             </span>
                           </div>

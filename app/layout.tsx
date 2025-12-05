@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Providers } from "./providers";
 import { PerformanceMonitor } from "@/components/PerformanceMonitor";
+import GoogleAnalytics from "@/components/GoogleAnalytics";
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -44,6 +45,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} ${playfair.variable} font-sans`}>
+          <GoogleAnalytics />
           <Providers>
             {children}
             <Toaster />

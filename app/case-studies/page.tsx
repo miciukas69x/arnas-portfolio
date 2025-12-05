@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import AnimatedBackground from '@/components/AnimatedBackground';
@@ -8,11 +9,30 @@ import Footer from '@/components/Footer';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
-import { projects } from '@/data/projects';
+import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
+import type { Project } from '@/data/projects';
 
 export default function CaseStudiesPage() {
   const { language, t } = useLanguage();
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const response = await fetch('/api/projects');
+        if (response.ok) {
+          const data = await response.json();
+          setProjects(data);
+        }
+      } catch (error) {
+        console.error('Error fetching projects:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProjects();
+  }, []);
 
   return (
     <div className="relative min-h-screen">
@@ -51,8 +71,14 @@ export default function CaseStudiesPage() {
         {/* Case Studies */}
         <section className="py-20 px-4">
           <div className="max-w-6xl mx-auto">
-            <div className="space-y-12">
-              {projects.map((study, index) => (
+            {loading ? (
+              <div className="text-center py-20">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+                <p className="text-muted-foreground">{t('caseStudies.loading') || 'Loading...'}</p>
+              </div>
+            ) : (
+              <div className="space-y-12">
+                {projects.map((study, index) => (
                 <motion.div
                   key={study.id}
                   initial={{ opacity: 0, y: 30 }}
@@ -60,7 +86,7 @@ export default function CaseStudiesPage() {
                   viewport={{ once: true, margin: '-50px' }}
                   transition={{ delay: index * 0.1, duration: 0.3, ease: 'easeOut' }}
                 >
-                  <Card className="group h-full bg-card/50 border-border/50 hover-glow transition-all duration-500 hover:border-primary/30 overflow-hidden">
+                  <Card className="group h-full bg-card/50 border-border/50 hover-glow transition-all duration-500 hover:border-primary/50 overflow-hidden">
                     <div className={`aspect-video bg-gradient-to-br ${study.gradient} relative overflow-hidden`}>
                       <div className="absolute inset-0 bg-card/50 flex items-center justify-center">
                         <div className="text-4xl opacity-30">📊</div>
@@ -104,8 +130,9 @@ export default function CaseStudiesPage() {
                     </CardContent>
                   </Card>
                 </motion.div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </section>
       </main>

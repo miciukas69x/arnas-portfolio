@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
-import { existsSync } from 'fs';
+import { supabaseAdmin } from '@/lib/supabase-admin';
+import { isAdminAuthenticated } from '@/lib/auth-helpers';
 
 export async function POST(request: NextRequest) {
   try {
+    // Check authentication
+    const authenticated = await isAdminAuthenticated();
+    if (!authenticated) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const formData = await request.formData();
     const file = formData.get('file') as File;
 
@@ -12,27 +17,40 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
     }
 
+    // Sanitize filename
+    const filename = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const timestamp = Date.now();
+    const uniqueFilename = `${timestamp}-${filename}`;
+
+    // Convert file to buffer
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Create downloads directory if it doesn't exist
-    const uploadsDir = join(process.cwd(), 'public', 'downloads');
-    if (!existsSync(uploadsDir)) {
-      await mkdir(uploadsDir, { recursive: true });
+    // Upload to Supabase Storage
+    const { data, error } = await supabaseAdmin.storage
+      .from('downloads')
+      .upload(uniqueFilename, buffer, {
+        contentType: file.type,
+        upsert: false, // Don't overwrite existing files
+      });
+
+    if (error) {
+      console.error('Supabase storage error:', error);
+      return NextResponse.json(
+        { error: 'Failed to upload file to storage' },
+        { status: 500 }
+      );
     }
 
-    // Sanitize filename
-    const filename = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const filepath = join(uploadsDir, filename);
+    // Get public URL
+    const { data: urlData } = supabaseAdmin.storage
+      .from('downloads')
+      .getPublicUrl(uniqueFilename);
 
-    // Write file
-    await writeFile(filepath, buffer);
+    const fileUrl = urlData.publicUrl;
 
-    // Return the public URL
-    const fileUrl = `/downloads/${filename}`;
-
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       fileUrl,
       fileName: filename,
       fileSize: file.size,
@@ -45,4 +63,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

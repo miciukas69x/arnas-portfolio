@@ -1,29 +1,49 @@
 "use client";
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export default function AnimatedBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    const ctx = canvas.getContext('2d', { alpha: false });
+    if (!ctx) {
+      console.error('Failed to get canvas context');
+      return;
+    }
 
     const resize = () => {
+      if (!canvas) return;
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
     };
 
-    resize();
+    // Initial resize - ensure it happens after mount
+    const initResize = () => {
+      resize();
+      setIsReady(true);
+    };
+    
+    // Use requestAnimationFrame to ensure DOM is ready
+    requestAnimationFrame(() => {
+      initResize();
+    });
     
     // Throttle resize
     let resizeTimeout: NodeJS.Timeout;
     const throttledResize = () => {
       clearTimeout(resizeTimeout);
-      resizeTimeout = setTimeout(resize, 100);
+      resizeTimeout = setTimeout(() => {
+        resize();
+        // Re-render after resize
+        if (isReady) {
+          requestAnimationFrame(() => render());
+        }
+      }, 100);
     };
     window.addEventListener('resize', throttledResize, { passive: true });
 
@@ -78,66 +98,96 @@ export default function AnimatedBackground() {
 
     // Render static background (no animation)
     const render = () => {
-      const imageData = ctx.createImageData(canvas.width, canvas.height);
-      const data = imageData.data;
+      if (!canvas || !ctx) return;
+      
+      try {
+        // Ensure canvas has valid dimensions
+        if (canvas.width === 0 || canvas.height === 0) {
+          canvas.width = window.innerWidth || 1920;
+          canvas.height = window.innerHeight || 1080;
+        }
 
-      const scale = 0.002;
-      const step = 2;
+        const imageData = ctx.createImageData(canvas.width, canvas.height);
+        const data = imageData.data;
 
-      for (let y = 0; y < canvas.height; y += step) {
-        for (let x = 0; x < canvas.width; x += step) {
-          let value = 0;
-          let amplitude = 1;
-          let frequency = 1;
+        const scale = 0.002;
+        const step = 2;
 
-          // Single octave for static look
-          for (let o = 0; o < 2; o++) {
-            value += noise(
-              x * scale * frequency,
-              y * scale * frequency,
-              0 // Static - no time component
-            ) * amplitude;
-            amplitude *= 0.5;
-            frequency *= 2;
-          }
+        for (let y = 0; y < canvas.height; y += step) {
+          for (let x = 0; x < canvas.width; x += step) {
+            let value = 0;
+            let amplitude = 1;
+            let frequency = 1;
 
-          value = (value + 1) * 0.5;
-          value = Math.pow(value, 1.5);
+            // Single octave for static look
+            for (let o = 0; o < 2; o++) {
+              value += noise(
+                x * scale * frequency,
+                y * scale * frequency,
+                0 // Static - no time component
+              ) * amplitude;
+              amplitude *= 0.5;
+              frequency *= 2;
+            }
 
-          const brightness = Math.floor(value * 40);
-          
-          // Fill step x step block
-          for (let dy = 0; dy < step && y + dy < canvas.height; dy++) {
-            for (let dx = 0; dx < step && x + dx < canvas.width; dx++) {
-              const i = ((y + dy) * canvas.width + (x + dx)) * 4;
-              data[i] = brightness;
-              data[i + 1] = brightness;
-              data[i + 2] = brightness + 5;
-              data[i + 3] = 255;
+            value = (value + 1) * 0.5;
+            value = Math.pow(value, 1.5);
+
+            const brightness = Math.floor(value * 40);
+            
+            // Fill step x step block
+            for (let dy = 0; dy < step && y + dy < canvas.height; dy++) {
+              for (let dx = 0; dx < step && x + dx < canvas.width; dx++) {
+                const i = ((y + dy) * canvas.width + (x + dx)) * 4;
+                data[i] = brightness;
+                data[i + 1] = brightness;
+                data[i + 2] = brightness + 5;
+                data[i + 3] = 255;
+              }
             }
           }
         }
-      }
 
-      ctx.putImageData(imageData, 0, 0);
+        ctx.putImageData(imageData, 0, 0);
+      } catch (error) {
+        console.error('Error rendering background:', error);
+        // Fallback: fill with solid color
+        if (ctx && canvas) {
+          ctx.fillStyle = 'hsl(0, 0%, 5%)';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+      }
     };
 
-    render();
+    // Render after initialization
+    if (isReady) {
+      requestAnimationFrame(() => render());
+    }
 
     return () => {
       window.removeEventListener('resize', throttledResize);
       clearTimeout(resizeTimeout);
     };
-  }, []);
+  }, [isReady]);
 
   return (
-    <canvas
-      ref={canvasRef}
-      className="fixed inset-0 -z-10 opacity-60"
-      style={{ 
-        background: 'hsl(0, 0%, 5%)',
-        // NO blur, NO animation
-      }}
-    />
+    <>
+      {/* Fallback background - always visible */}
+      <div 
+        className="fixed inset-0 -z-10 bg-background"
+        style={{ 
+          backgroundColor: 'hsl(0, 0%, 5%)',
+        }}
+      />
+      {/* Canvas overlay */}
+      <canvas
+        ref={canvasRef}
+        className="fixed inset-0 -z-10 opacity-60"
+        style={{ 
+          backgroundColor: 'hsl(0, 0%, 5%)',
+          display: isReady ? 'block' : 'none',
+        }}
+      />
+    </>
   );
 }

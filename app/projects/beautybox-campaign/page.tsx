@@ -191,10 +191,10 @@ export default function BeautyBoxCampaignPage() {
                   viewport={{ once: true }}
                   transition={{ delay: index * 0.1, duration: 0.3 }}
                 >
-                  <Card className="bg-card/50 border-border/50 hover:border-primary/30 transition-all">
+                  <Card className="bg-card/50 border-border/50 hover:border-primary/50 transition-all">
                     <CardContent className="p-6">
                       <div className="flex gap-4">
-                        <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg">
+                        <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-lg">
                           {index + 1}
                         </div>
                         <div className="flex-1">
@@ -259,7 +259,7 @@ export default function BeautyBoxCampaignPage() {
                         {project.technologies[language].map((tech, index) => (
                           <span
                             key={index}
-                            className="px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium"
+                            className="px-4 py-2 rounded-full bg-primary/20 text-primary text-sm font-medium"
                           >
                             {tech}
                           </span>

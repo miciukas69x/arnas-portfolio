@@ -64,7 +64,7 @@ export default function LoginPage() {
       >
         <Card className="glass border-border/50 bg-card/80 backdrop-blur-xl">
           <CardHeader className="text-center space-y-2">
-            <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+            <div className="mx-auto w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mb-4">
               <Lock className="h-8 w-8 text-primary" />
             </div>
             <CardTitle className="text-2xl sm:text-3xl font-display">Admin Login</CardTitle>

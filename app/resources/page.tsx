@@ -1,16 +1,16 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { resources } from '@/data/resources';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Download, FileText, Image, Archive, File, Search } from 'lucide-react';
+import { Download, FileText, Image, Archive, File, Search, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { motion } from 'framer-motion';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import AnimatedBackground from '@/components/AnimatedBackground';
+import type { DownloadableResource } from '@/data/resources';
 
 const getFileIcon = (fileType: string) => {
   const type = fileType.toLowerCase();
@@ -25,6 +25,25 @@ const formatFileSize = (size: string) => size;
 export default function ResourcesPage() {
   const { language, t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
+  const [resources, setResources] = useState<DownloadableResource[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchResources = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/resources');
+        if (!response.ok) throw new Error('Failed to fetch resources');
+        const data = await response.json();
+        setResources(data);
+      } catch (error) {
+        console.error('Error fetching resources:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchResources();
+  }, []);
 
   const filteredResources = resources.filter((resource) => {
     const query = searchQuery.toLowerCase();
@@ -36,20 +55,37 @@ export default function ResourcesPage() {
     );
   });
 
-  const handleDownload = (resource: typeof resources[0]) => {
+  const handleDownload = async (resource: typeof resources[0]) => {
     try {
-      // Create a link element and trigger download
-      const link = document.createElement('a');
-      link.href = resource.fileUrl;
-      link.download = resource.fileName;
-      link.style.display = 'none';
-      document.body.appendChild(link);
-      link.click();
+      // Check if it's a Supabase Storage URL (full URL) or local path
+      const isExternalUrl = resource.fileUrl.startsWith('http://') || resource.fileUrl.startsWith('https://');
       
-      // Clean up after a short delay
-      setTimeout(() => {
-        document.body.removeChild(link);
-      }, 100);
+      if (isExternalUrl) {
+        // Use download API route for external URLs (Supabase Storage)
+        const downloadUrl = `/api/download?url=${encodeURIComponent(resource.fileUrl)}&filename=${encodeURIComponent(resource.fileName)}`;
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = resource.fileName;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        
+        setTimeout(() => {
+          document.body.removeChild(link);
+        }, 100);
+      } else {
+        // Local file - use direct download
+        const link = document.createElement('a');
+        link.href = resource.fileUrl;
+        link.download = resource.fileName;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        
+        setTimeout(() => {
+          document.body.removeChild(link);
+        }, 100);
+      }
     } catch (error) {
       console.error('Download error:', error);
       // Fallback: try to open the file in a new tab
@@ -97,7 +133,12 @@ export default function ResourcesPage() {
         </motion.div>
 
         {/* Resources Grid */}
-        {filteredResources.length === 0 ? (
+        {loading ? (
+          <div className="text-center py-12 sm:py-16">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p className="text-muted-foreground">{t('resources.loading') || 'Loading...'}</p>
+          </div>
+        ) : filteredResources.length === 0 ? (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -130,7 +171,7 @@ export default function ResourcesPage() {
                     )}
                     <CardHeader>
                       <div className="flex items-start gap-3">
-                        <div className="p-2 rounded-lg bg-primary/10">
+                        <div className="p-2 rounded-lg bg-primary/20">
                           <FileIcon className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                         </div>
                         <div className="flex-1 min-w-0">

@@ -1,13 +1,15 @@
 "use client";
 
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
-import { services } from '@/data/services';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Palette, Facebook, Search, MessageCircle, Lightbulb, LucideIcon } from 'lucide-react';
+import type { Service } from '@/data/services';
 
 const tags = [
   'Product Design',
@@ -22,12 +24,44 @@ const tags = [
   'Slide Decks',
 ];
 
+// Icon mapping
+const iconMap: Record<string, LucideIcon> = {
+  Palette,
+  Facebook,
+  Search,
+  MessageCircle,
+  Lightbulb,
+};
+
 export default function ServicesSection() {
   const { t } = useLanguage();
   const isMobile = useIsMobile();
+  const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const response = await fetch('/api/services');
+        if (response.ok) {
+          const data = await response.json();
+          setServices(data);
+        }
+      } catch (error) {
+        console.error('Error fetching services:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchServices();
+  }, []);
 
   // Show only first 2 services on mobile, first 4 on desktop
   const displayedServices = isMobile ? services.slice(0, 2) : services.slice(0, 4);
+
+  if (loading || displayedServices.length === 0) {
+    return null;
+  }
 
   return (
     <section className="py-16 sm:py-24 md:py-32 px-4 sm:px-6">
@@ -67,7 +101,13 @@ export default function ServicesSection() {
 
         {/* Services Grid */}
         <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
-          {displayedServices.map((service, index) => (
+          {displayedServices.map((service, index) => {
+            // Map icon name to component
+            const ServiceIcon = (service as any).iconName 
+              ? iconMap[(service as any).iconName] || Palette
+              : service.icon || Palette;
+            
+            return (
             <motion.div
               key={service.id}
               initial={{ opacity: 0, y: 30 }}
@@ -75,11 +115,11 @@ export default function ServicesSection() {
               viewport={{ once: true, margin: '-50px' }}
               transition={{ delay: index * 0.03, duration: 0.3, ease: 'easeOut' }}
             >
-              <Card className="h-full bg-card/50 border-border/50 hover-glow transition-all duration-300 hover:border-primary/30 group">
+              <Card className="h-full bg-card/50 border-border/50 hover-glow transition-all duration-300 hover:border-primary/50 group">
                 <CardContent className="p-4 sm:p-6">
                   <div className="flex items-start gap-3 sm:gap-4">
                     <div className="p-2 sm:p-3 rounded-lg bg-muted flex-shrink-0">
-                      <service.icon size={20} className="sm:w-6 sm:h-6 text-primary" />
+                      <ServiceIcon size={20} className="sm:w-6 sm:h-6 text-primary" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="text-base sm:text-lg font-bold mb-2 text-foreground group-hover:text-primary transition-colors">
@@ -103,7 +143,8 @@ export default function ServicesSection() {
                 </CardContent>
               </Card>
             </motion.div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Tags Marquee */}
@@ -118,7 +159,7 @@ export default function ServicesSection() {
                 key={i}
                 className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-muted-foreground px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-border/50"
               >
-                <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-primary/50" />
+                <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-primary/70" />
                 {tag}
               </span>
             ))}

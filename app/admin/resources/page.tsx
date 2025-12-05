@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { resources } from '@/data/resources';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,7 +18,8 @@ import type { DownloadableResource } from '@/data/resources';
 
 function AdminResourcesPage() {
   const { language } = useLanguage();
-  const [localResources, setLocalResources] = useState<DownloadableResource[]>(resources);
+  const [localResources, setLocalResources] = useState<DownloadableResource[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -38,6 +38,25 @@ function AdminResourcesPage() {
     createdAt: new Date().toISOString(),
   });
   const [tagInput, setTagInput] = useState('');
+
+  // Fetch resources from API
+  useEffect(() => {
+    const fetchResources = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/resources');
+        if (!response.ok) throw new Error('Failed to fetch resources');
+        const data = await response.json();
+        setLocalResources(data);
+      } catch (error) {
+        console.error('Error fetching resources:', error);
+        alert(language === 'lt' ? 'Klaida įkeliant išteklius' : 'Error loading resources');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchResources();
+  }, [language]);
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
@@ -109,7 +128,7 @@ function AdminResourcesPage() {
     }
   };
 
-  const handleAddResource = () => {
+  const handleAddResource = async () => {
     if (
       !formData.id ||
       !formData.title?.lt ||
@@ -135,15 +154,34 @@ function AdminResourcesPage() {
       createdAt: formData.createdAt || new Date().toISOString(),
     };
 
-    if (editingId) {
-      setLocalResources(localResources.map(r => r.id === editingId ? newResource : r));
-      setEditingId(null);
-    } else {
-      setLocalResources([...localResources, newResource]);
-    }
+    try {
+      const url = editingId ? `/api/resources/${editingId}` : '/api/resources';
+      const method = editingId ? 'PUT' : 'POST';
+      
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newResource),
+      });
 
-    resetForm();
-    alert(language === 'lt' ? 'Išteklys išsaugotas!' : 'Resource saved!');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to save resource');
+      }
+
+      // Refresh resources from API
+      const fetchResponse = await fetch('/api/resources');
+      if (fetchResponse.ok) {
+        const data = await fetchResponse.json();
+        setLocalResources(data);
+      }
+
+      resetForm();
+      alert(language === 'lt' ? 'Išteklys išsaugotas!' : 'Resource saved!');
+    } catch (error) {
+      console.error('Error saving resource:', error);
+      alert(language === 'lt' ? 'Klaida išsaugant ištekį' : 'Error saving resource');
+    }
   };
 
   const handleEditResource = (resource: DownloadableResource) => {
@@ -152,9 +190,36 @@ function AdminResourcesPage() {
     setIsAdding(true);
   };
 
-  const handleRemoveResource = (id: string) => {
-    if (confirm(language === 'lt' ? 'Ar tikrai norite pašalinti šį ištekį?' : 'Are you sure you want to remove this resource?')) {
-      setLocalResources(localResources.filter((r) => r.id !== id));
+  const handleRemoveResource = async (id: string) => {
+    if (!confirm(language === 'lt' ? 'Ar tikrai norite pašalinti šį ištekį?' : 'Are you sure you want to remove this resource?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/resources/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('Delete error response:', errorData);
+        throw new Error(errorData.error || `Failed to delete resource: ${response.status}`);
+      }
+
+      // Refresh resources from API
+      const fetchResponse = await fetch('/api/resources');
+      if (fetchResponse.ok) {
+        const data = await fetchResponse.json();
+        setLocalResources(data);
+        alert(language === 'lt' ? 'Išteklys pašalintas!' : 'Resource removed!');
+      } else {
+        throw new Error('Failed to refresh resources list');
+      }
+    } catch (error) {
+      console.error('Error deleting resource:', error);
+      alert(language === 'lt' 
+        ? `Klaida šalinant ištekį: ${error instanceof Error ? error.message : 'Nežinoma klaida'}` 
+        : `Error deleting resource: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -475,7 +540,7 @@ function AdminResourcesPage() {
                         {formData.tags.map((tag) => (
                           <span
                             key={tag}
-                            className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-primary/10 text-primary text-sm"
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-primary/20 text-primary text-sm"
                           >
                             {tag}
                             <button
@@ -507,7 +572,16 @@ function AdminResourcesPage() {
 
           {/* Resources List */}
           <div className="space-y-4">
-            {localResources.length === 0 ? (
+            {loading ? (
+              <Card className="bg-card/50 border-border/50">
+                <CardContent className="py-12 text-center">
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+                  <p className="text-muted-foreground">
+                    {language === 'lt' ? 'Įkeliama...' : 'Loading...'}
+                  </p>
+                </CardContent>
+              </Card>
+            ) : localResources.length === 0 ? (
               <Card className="bg-card/50 border-border/50">
                 <CardContent className="py-12 text-center text-muted-foreground">
                   {language === 'lt' ? 'Išteklių nėra' : 'No resources'}

@@ -56,6 +56,14 @@ function AdminDashboard() {
       bgColor: 'bg-green-500/10',
     },
     {
+      title: 'Testimonials',
+      description: 'Manage client testimonials and reviews',
+      icon: Users,
+      href: '/admin/testimonials',
+      color: 'text-yellow-500',
+      bgColor: 'bg-yellow-500/10',
+    },
+    {
       title: 'Analytics',
       description: 'View site analytics and statistics',
       icon: BarChart3,

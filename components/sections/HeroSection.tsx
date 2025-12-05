@@ -40,7 +40,11 @@ export default function HeroSection() {
         className="flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full glass mb-6 sm:mb-8"
       >
         <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-primary animate-pulse" />
-        <span className="text-xs sm:text-sm text-primary">{t('hero.badge')}</span>
+        <span className="text-xs sm:text-sm text-white">
+          <span className="text-primary">4/15</span>
+          {' '}
+          {t('hero.badge').replace(/^4\/15\s+/i, '')}
+        </span>
       </motion.div>
 
       {/* Title */}
@@ -91,7 +95,7 @@ export default function HeroSection() {
       >
         <div className="w-full h-full bg-gradient-to-br from-muted/50 to-card flex items-center justify-center">
           <div className="text-center">
-            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-3 sm:mb-4">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-primary/30 flex items-center justify-center mx-auto mb-3 sm:mb-4">
               <div className="w-0 h-0 border-t-6 sm:border-t-8 border-t-transparent border-l-10 sm:border-l-12 border-l-primary border-b-6 sm:border-b-8 border-b-transparent ml-1" />
             </div>
             <p className="text-muted-foreground text-xs sm:text-sm">Video Coming Soon</p>

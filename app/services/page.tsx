@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import AnimatedBackground from '@/components/AnimatedBackground';
@@ -8,8 +9,18 @@ import Footer from '@/components/Footer';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Check, ArrowRight } from 'lucide-react';
-import { services } from '@/data/services';
+import { ArrowLeft, Check, ArrowRight, Loader2 } from 'lucide-react';
+import { Palette, Facebook, Search, MessageCircle, Lightbulb, LucideIcon } from 'lucide-react';
+import type { Service } from '@/data/services';
+
+// Icon mapping
+const iconMap: Record<string, LucideIcon> = {
+  Palette,
+  Facebook,
+  Search,
+  MessageCircle,
+  Lightbulb,
+};
 
 const tags = [
   'Product Design',
@@ -30,6 +41,25 @@ const tags = [
 
 export default function ServicesPage() {
   const { t, language } = useLanguage();
+  const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const response = await fetch('/api/services');
+        if (response.ok) {
+          const data = await response.json();
+          setServices(data);
+        }
+      } catch (error) {
+        console.error('Error fetching services:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchServices();
+  }, []);
 
   return (
     <div className="relative min-h-screen">
@@ -71,8 +101,19 @@ export default function ServicesPage() {
         {/* Services Grid */}
         <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6">
           <div className="max-w-6xl mx-auto">
-            <div className="grid sm:grid-cols-2 gap-6 sm:gap-8 mb-12 sm:mb-16 md:mb-20">
-              {services.map((service, index) => (
+            {loading ? (
+              <div className="text-center py-20">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+                <p className="text-muted-foreground">{t('services.loading') || 'Loading...'}</p>
+              </div>
+            ) : (
+              <div className="grid sm:grid-cols-2 gap-6 sm:gap-8 mb-12 sm:mb-16 md:mb-20">
+                {services.map((service, index) => {
+                  // Map icon name to component
+                  const ServiceIcon = (service as any).iconName 
+                    ? iconMap[(service as any).iconName] || Palette
+                    : service.icon || Palette;
+                  return (
                 <motion.div
                   key={service.id}
                   initial={{ opacity: 0, y: 30 }}
@@ -80,11 +121,11 @@ export default function ServicesPage() {
                   viewport={{ once: true, margin: '-50px' }}
                   transition={{ delay: index * 0.05, duration: 0.3, ease: 'easeOut' }}
                 >
-                  <Card className="h-full bg-card/50 border-border/50 hover-glow transition-all duration-300 hover:border-primary/30 group">
+                  <Card className="h-full bg-card/50 border-border/50 hover-glow transition-all duration-300 hover:border-primary/50 group">
                     <CardContent className="p-4 sm:p-6 md:p-8">
                       <div className="flex items-start gap-3 sm:gap-4 mb-4 sm:mb-6">
                         <div className="p-3 sm:p-4 rounded-lg bg-muted flex-shrink-0">
-                          <service.icon size={24} className="sm:w-8 sm:h-8 text-primary" />
+                          <ServiceIcon size={24} className="sm:w-8 sm:h-8 text-primary" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <h3 className="text-xl sm:text-2xl font-bold mb-2 sm:mb-3 text-foreground">
@@ -117,8 +158,10 @@ export default function ServicesPage() {
                     </CardContent>
                   </Card>
                 </motion.div>
-              ))}
-            </div>
+                  );
+                })}
+              </div>
+            )}
 
             {/* Tags Section */}
             <motion.div
@@ -153,7 +196,7 @@ export default function ServicesPage() {
                     key={i}
                     className="flex items-center gap-2 text-sm text-muted-foreground px-4 py-2 rounded-full border border-border/50"
                   >
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary/50" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary/70" />
                     {tag}
                   </span>
                 ))}
